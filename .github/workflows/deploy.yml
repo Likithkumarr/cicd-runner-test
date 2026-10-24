@@ -6,23 +6,26 @@ on:
 
 jobs:
   deploy-to-wsl:
-    runs-on: self-hosted   # This tells GitHub to run directly inside your WSL!
+    runs-on: self-hosted
     steps:
       - name: 1. Pull Latest Code from GitHub into WSL
         uses: actions/checkout@v4
 
       - name: 2. Install / Update Python Dependencies
         run: |
+          export PATH=$PATH:$HOME/.local/bin
           python3 -m pip install --break-system-packages -r requirements.txt
 
       - name: 3. Run Automated Tests
         run: |
+          export PATH=$PATH:$HOME/.local/bin
           python3 -m pytest test_app.py
 
       - name: 4. Restart Python App in WSL
         run: |
-          # Stop any old running instance of app.py
-          pkill -f "uvicorn app:app" || true
+          export PATH=$PATH:$HOME/.local/bin
+          # Stop any old running instance of uvicorn
+          pkill -f "uvicorn" || true
 
           # Start the updated app in background
           nohup python3 -m uvicorn app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
