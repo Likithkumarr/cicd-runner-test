@@ -7,6 +7,10 @@ on:
 jobs:
   deploy-to-wsl:
     runs-on: self-hosted
+    env:
+      # Prevents GitHub runner from auto-killing background processes when step finishes
+      ACTIONS_RUNNER_PROCESS_TREE_CLEANUP: false
+
     steps:
       - name: 1. Pull Latest Code from GitHub into WSL
         uses: actions/checkout@v4
@@ -24,11 +28,13 @@ jobs:
       - name: 4. Restart Python App in WSL
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # Stop any old running instance of uvicorn
+          # Stop old uvicorn instance
           pkill -f "uvicorn" || true
+          sleep 1
 
-          # Start the updated app in background
-          nohup python3 -m uvicorn app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
-          
-          sleep 2
-          echo "🎉 Code successfully moved from GitHub to WSL and app is running!"
+          # Start uvicorn detached in background
+          nohup python3 -m uvicorn app:app --host 0.0.0.0 --port 8000 </dev/null > app.log 2>&1 &
+
+          sleep 3
+          echo "🎉 Checking live response from deployed app:"
+          curl -s http://localhost:8000/
